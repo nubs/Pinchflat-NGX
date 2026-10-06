@@ -96,10 +96,11 @@ RUN set -eux; \
     -o /opt/pinchflat-ngx/yt-dlp-plugins/bgutil-ytdlp-pot-provider.zip && \
   ln -s /opt/pinchflat-ngx/yt-dlp-plugins /opt/pinchyt/yt-dlp-plugins && \
   chmod -R a+rX /opt/pinchflat-ngx/yt-dlp-plugins && \
-  # Install Apprise
+  # Install Apprise - pinned to the 2.x line; its CLI args are hardcoded in
+  # lib/pinchflat/lifecycle/notifications and aren't guaranteed stable across majors
   export PIPX_HOME=/opt/pipx && \
   export PIPX_BIN_DIR=/usr/local/bin && \
-  pipx install apprise && \
+  pipx install "apprise>=2.0,<3.0" && \
   # Set up optional shell tools
   if [ "${INSTALL_SHELL_TOOLS:-0}" = "1" ]; then \
     chsh -s $(which zsh) && \

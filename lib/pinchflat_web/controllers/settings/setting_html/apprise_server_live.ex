@@ -46,10 +46,18 @@ defmodule Pinchflat.Settings.AppriseServerLive do
     if blank?(assigns.value) do
       {:noreply, socket}
     else
-      backend_runner().run([assigns.value], title: "Pinchflat Test", body: "This is a test message from Pinchflat")
+      result =
+        backend_runner().run([assigns.value], title: "Pinchflat Test", body: "This is a test message from Pinchflat")
+
       Process.send_after(self(), :reset_button_icon, 4_000)
 
-      {:noreply, assign(socket, %{icon_name: "hero-check", tooltip: "Sent!"})}
+      case result do
+        {:ok, _} ->
+          {:noreply, assign(socket, %{icon_name: "hero-check", tooltip: "Sent!"})}
+
+        {:error, err} ->
+          {:noreply, assign(socket, %{icon_name: "hero-exclamation-triangle", tooltip: "Failed: #{err}"})}
+      end
     end
   end
 

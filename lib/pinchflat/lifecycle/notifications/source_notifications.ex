@@ -35,13 +35,12 @@ defmodule Pinchflat.Lifecycle.Notifications.SourceNotifications do
   def send_new_media_notification(_, _, count) when count <= 0, do: :ok
 
   def send_new_media_notification(servers, source, changed_count) do
-    opts =
-      [
-        title: "[Pinchflat] New media found",
-        body: notification_body(source, changed_count)
-      ] ++ notification_link_opts(source)
+    opts = [
+      title: "[Pinchflat] New media found",
+      body: notification_body(source, changed_count)
+    ]
 
-    case backend_runner().run(servers, opts) do
+    case backend_runner().run(with_click_url(servers, source), opts) do
       {:ok, _} ->
         Logger.info("Sent new media notification for source #{source.id}")
 
@@ -85,14 +84,29 @@ defmodule Pinchflat.Lifecycle.Notifications.SourceNotifications do
     "Found #{changed_count} new media item(s) for #{source.custom_name}. Downloading them now"
   end
 
-  defp notification_link_opts(source) do
+  # Apprise has no `--href`/`--format` CLI flags (never has, across 1.x and 2.x) — a
+  # notification's click-through link is set via a `click=` query param on each
+  # service URL instead. See https://github.com/caronc/apprise/wiki/URLBasics
+  defp with_click_url(servers, _source) when servers in [nil, "", []], do: servers
+
+  defp with_click_url(servers, source) do
     case Settings.get(:external_base_url) do
       {:ok, base_url} when is_binary(base_url) and base_url != "" ->
-        [href: source_url(base_url, source), format: "markdown"]
+        click_url = source_url(base_url, source)
+
+        servers
+        |> List.wrap()
+        |> Enum.map(&append_click_param(&1, click_url))
 
       _ ->
-        []
+        servers
     end
+  end
+
+  defp append_click_param(server, click_url) do
+    separator = if String.contains?(server, "?"), do: "&", else: "?"
+
+    "#{server}#{separator}click=#{URI.encode_www_form(click_url)}"
   end
 
   defp source_url(base_url, source) do

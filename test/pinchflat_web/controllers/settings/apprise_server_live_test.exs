@@ -81,6 +81,21 @@ defmodule PinchflatWeb.Settings.AppriseServerLiveTest do
       refute result =~ "hero-paper-airplane"
       assert result =~ "hero-check"
     end
+
+    test "shows a failure icon and reason when the runner errors", %{conn: conn} do
+      stub(AppriseRunnerMock, :run, fn _, _ -> {:error, "boom"} end)
+
+      {:ok, view, _html} = live_isolated(conn, AppriseServerLive, session: create_session("cool-value"))
+
+      result =
+        view
+        |> element("button")
+        |> render_click()
+
+      refute result =~ "hero-check"
+      assert result =~ "hero-exclamation-triangle"
+      assert result =~ "Failed: boom"
+    end
   end
 
   defp create_session(value) do

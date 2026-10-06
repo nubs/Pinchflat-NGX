@@ -156,10 +156,11 @@ RUN set -eux; \
     unzip -q /tmp/deno.zip deno -d /usr/local/bin && \
     chmod a+rx /usr/local/bin/deno && \
     rm -f /tmp/deno.zip && \
-    # Apprise
+    # Apprise - pinned to the 2.x line; its CLI args are hardcoded in
+    # lib/pinchflat/lifecycle/notifications and aren't guaranteed stable across majors
     export PIPX_HOME=/opt/pipx && \
     export PIPX_BIN_DIR=/usr/local/bin && \
-    pipx install apprise && \
+    pipx install "apprise>=2.0,<3.0" && \
     # yt-dlp
     echo "Refreshing yt-dlp nightly cache bust token: ${YT_DLP_CACHE_BUST}" && \
     export YT_DLP_DOWNLOAD="https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download/yt-dlp" && \

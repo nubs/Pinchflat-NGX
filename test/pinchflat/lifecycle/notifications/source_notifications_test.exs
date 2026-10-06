@@ -111,20 +111,35 @@ defmodule Pinchflat.Lifecycle.Notifications.SourceNotificationsTest do
       source = source_fixture()
       Settings.set(external_base_url: "https://pinchflat.example.com/")
 
+      expected_click_url = URI.encode_www_form("https://pinchflat.example.com/sources/#{source.id}")
+
       expect(AppriseRunnerMock, :run, fn servers, opts ->
-        assert servers == @apprise_servers
+        assert servers == Enum.map(@apprise_servers, &"#{&1}?click=#{expected_click_url}")
 
         assert opts == [
                  title: "[Pinchflat] New media found",
-                 body: "Found 2 new media item(s) for #{source.custom_name}. Downloading them now",
-                 href: "https://pinchflat.example.com/sources/#{source.id}",
-                 format: "markdown"
+                 body: "Found 2 new media item(s) for #{source.custom_name}. Downloading them now"
                ]
 
         {:ok, ""}
       end)
 
       :ok = SourceNotifications.send_new_media_notification(@apprise_servers, source, 2)
+    end
+
+    test "appends the click param to a server url that already has a query string" do
+      source = source_fixture()
+      Settings.set(external_base_url: "https://pinchflat.example.com/")
+
+      expect(AppriseRunnerMock, :run, fn [server], _opts ->
+        assert server ==
+                 "ntfy://ntfy.example.com/topic?priority=high&click=" <>
+                   URI.encode_www_form("https://pinchflat.example.com/sources/#{source.id}")
+
+        {:ok, ""}
+      end)
+
+      :ok = SourceNotifications.send_new_media_notification("ntfy://ntfy.example.com/topic?priority=high", source, 1)
     end
 
     test "does not send a notification when count not positive" do
